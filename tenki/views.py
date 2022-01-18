@@ -2,8 +2,13 @@ from django.shortcuts import render
 from django.views import View
 
 from .models import Weather
-
 from .forms import YearMonthForm
+
+
+
+from django.db.models.functions import TruncMonth
+from django.db.models import Avg
+
 
 
 class IndexView(View):
@@ -48,6 +53,15 @@ class IndexView(View):
         #リストの内包表記
         #https://note.nkmk.me/python-list-comprehension/
         context["months"]   = [ i for i in range(1,13) ]
+
+
+        #月ごとの平均気温の出力(TruncMonthで月ごとに集計し、最高気温と最低気温の平均を生成、最後に月でソーティングする。)
+        #https://noauto-nolife.com/post/django-models-trunc/
+        monthly_temp  = Weather.objects.annotate(monthly=TruncMonth("dt")).values("monthly").annotate(
+                    today_high_temp_avg = Avg("today_high_temp"),today_low_temp_avg = Avg("today_low_temp")
+                    ).values("monthly","today_high_temp_avg","today_low_temp_avg").order_by("-monthly")
+
+        print(monthly_temp)
 
         return render(request,"tenki/index.html",context)
 
